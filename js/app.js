@@ -6,87 +6,90 @@
  * jQuery.
  */
 
-// The names and URLs to all of the feeds we'd like available.
-var allFeeds = [
-    {
-        name: 'Udacity Blog',
-        url: 'http://blog.udacity.com/feed'
-    }, {
-        name: 'CSS Tricks',
-        url: 'http://feeds.feedburner.com/CssTricks'
-    }, {
-        name: 'HTML5 Rocks',
-        url: 'http://feeds.feedburner.com/html5rocks'
-    }, {
-        name: 'Linear Digressions',
-        url: 'http://feeds.feedburner.com/udacity-linear-digressions'
-    }
-];
-
-/* This function starts up our application. The Google Feed
- * Reader API is loaded asynchonously and will then call this
- * function when the API is loaded.
- */
-function init() {
-    // Load the first feed we've defined (index of 0).
-    loadFeed(0);
+function feedReader(news = 0){
+    this.news = news;
+    this.allFeeds = [
+        {
+            name: 'Udacity Blog',
+            url: 'http://blog.udacity.com/feed'
+        }, {
+            name: 'CSS Tricks',
+            url: 'http://feeds.feedburner.com/CssTricks'
+        }, {
+            name: 'HTML5 Rocks',
+            url: 'http://feeds.feedburner.com/html5rocks'
+        }, {
+            name: 'Linear Digressions',
+            url: 'http://feeds.feedburner.com/udacity-linear-digressions'
+        }
+    ];
+    this.initialFeed = false;
+    this.titles = [];
 }
 
-/* This function performs everything necessary to load a
- * feed using the Google Feed Reader API. It will then
- * perform all of the DOM operations required to display
- * feed entries on the page. Feeds are referenced by their
- * index position within the allFeeds array.
- * This function all supports a callback as the second parameter
- * which will be called after everything has run successfully.
- */
- function loadFeed(id, cb) {
-     var feedUrl = allFeeds[id].url,
-         feedName = allFeeds[id].name;
+feedReader.prototype.loadFeed = function(id, cb){
+    var feedUrl = this.allFeeds[id].url,
+        feedName = this.allFeeds[id].name,
+        self = this;
 
      $.ajax({
-       type: "POST",
-       url: 'https://rsstojson.udacity.com/parseFeed',
-       data: JSON.stringify({url: feedUrl}),
-       contentType:"application/json",
-       success: function (result, status){
+        type: "POST",
+        url: 'https://rsstojson.udacity.com/parseFeed',
+        data: JSON.stringify({url: feedUrl}),
+        contentType:"application/json",
+        success: function (result, status){
 
-                 var container = $('.feed'),
-                     title = $('.header-title'),
-                     entries = result.feed.entries,
-                     entriesLen = entries.length,
-                     entryTemplate = Handlebars.compile($('.tpl-entry').html());
+            var container = $('.feed'),
+                title = $('.header-title'),
+                entries = result.feed.entries,
+                entriesLen = entries.length,
+                entryTemplate = Handlebars.compile($('.tpl-entry').html());
 
-                 title.html(feedName);   // Set the header text
-                 container.empty();      // Empty out all previous entries
+            self.initialFeed = true;
 
-                 /* Loop through the entries we just loaded via the Google
-                  * Feed Reader API. We'll then parse that entry against the
-                  * entryTemplate (created above using Handlebars) and append
-                  * the resulting HTML to the list of entries on the page.
-                  */
-                 entries.forEach(function(entry) {
-                     container.append(entryTemplate(entry));
-                 });
+            title.html(feedName);   // Set the header text
+            self.titles.push(feedName);
+            container.empty();      // Empty out all previous entries
 
-                 if (cb) {
-                     cb();
-                 }
-               },
-       error: function (result, status, err){
-                 //run only the callback without attempting to parse result due to error
-                 if (cb) {
-                     cb();
-                 }
-               },
-       dataType: "json"
+            /* Loop through the entries we just loaded via the Google
+            * Feed Reader API. We'll then parse that entry against the
+            * entryTemplate (created above using Handlebars) and append
+            * the resulting HTML to the list of entries on the page.
+            */
+            entries.forEach(function(entry) {
+                container.append(entryTemplate(entry));
+            });
+
+            if (cb) {
+                cb();
+            }
+        },
+        error: function (result, status, err){
+            //run only the callback without attempting to parse result due to error
+            if (cb) {
+                cb();
+            }
+        },
+        dataType: "json"
      });
- }
+}
 
-/* Google API: Loads the Feed Reader API and defines what function
- * to call when the Feed Reader API is done loading.
- */
-google.setOnLoadCallback(init);
+feedReader.prototype.init = function(){
+    this.loadFeed(this.news);
+}
+
+feedReader.prototype.menuVisibility = function(){
+    $('body').toggleClass('menu-hidden');
+}
+
+feedReader.prototype.checkDiference = function(val1, val2){
+    if(val1 != val2){
+        return true;
+    }
+}
+
+var feed = new feedReader()
+google.setOnLoadCallback(feed.init());
 
 /* All of this functionality is heavily reliant upon the DOM, so we
  * place our code in the $() function to ensure it doesn't execute
@@ -105,7 +108,7 @@ $(function() {
      * above using Handlebars) and append it to the list of all
      * available feeds within the menu.
      */
-    allFeeds.forEach(function(feed) {
+    feed.allFeeds.forEach(function(feed) {
         feed.id = feedId;
         feedList.append(feedItemTemplate(feed));
 
@@ -116,7 +119,8 @@ $(function() {
      * the menu, load the feed, and prevent the default action
      * (following the link) from occurring.
      */
-    feedList.on('click', 'a', function() {
+    feedList.on('click', 'a', function(event) {
+        event.preventDefault();
         var item = $(this);
 
         $('body').addClass('menu-hidden');
@@ -128,6 +132,6 @@ $(function() {
      * on the body to perform the hiding/showing of our menu.
      */
     menuIcon.on('click', function() {
-        $('body').toggleClass('menu-hidden');
+        feed.menuVisibility();
     });
 }());
