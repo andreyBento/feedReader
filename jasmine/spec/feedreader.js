@@ -70,10 +70,18 @@ $(function() {
           * clicked and does it hide when clicked again.
           */
         it('must open and close when called', function(){
-            $('.menu-icon-link').click();
-            expect($('body').hasClass('menu-hidden')).toBe(false);
-            $('.menu-icon-link').click();
-            expect($('body').hasClass('menu-hidden')).toBe(true);
+
+            if($('body').hasClass('menu-hidden')){
+                $('.menu-icon-link').click();
+                expect($('body').hasClass('menu-hidden')).toBe(false);
+                $('.menu-icon-link').click();
+                expect($('body').hasClass('menu-hidden')).toBe(true);
+            } else {
+                $('.menu-icon-link').click();
+                expect($('body').hasClass('menu-hidden')).toBe(true);
+                $('.menu-icon-link').click();
+                expect($('body').hasClass('menu-hidden')).toBe(false);
+            }
         });
     });
 
@@ -92,8 +100,7 @@ $(function() {
         });
 
         it('must have been called', function(done){
-            expect(feed.initialFeed).toBe(true);
-            expect($('.feed').children().length).not.toBe(0);
+            expect($('.feed').find('.entry').length).not.toBe(0);
             done();
         });
     });
@@ -103,17 +110,17 @@ $(function() {
          * by the loadFeed function that the content actually changes.
          * Remember, loadFeed() is asynchronous.
          */
-        var teste;
+        var feedSelection;
 
         beforeEach(function(done){
-            teste = new feedReader(1);
-            teste.loadFeed(1, function(){
+            feedSelection = new feedReader(1);
+            feedSelection.loadFeed(1, function(){
                 done();
             })
         });
 
         it('must have been changed entries', function(done){
-            expect(feed.checkDiference(teste.titles, feed.titles)).toBe(true);
+            expect(feed.checkDiference(feedSelection.titles, feed.titles)).toBe(true);
             done();
         });
     });
